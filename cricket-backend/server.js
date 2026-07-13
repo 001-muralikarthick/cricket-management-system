@@ -18,6 +18,12 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE"]
 }));
 
+// ================= REQUEST LOGGER =================
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(express.json());
 
 // ================= SOCKET =================
@@ -51,15 +57,18 @@ app.use((req, res, next) => {
 });
 
 // ================= ROUTES =================
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/teams", require("./routes/teamRoutes"));
 app.use("/api/matches", require("./routes/matchRoutes"));
 app.use("/api/rankings", require("./routes/rankingRoutes"));
 app.use("/api/tournaments", require("./routes/tournamentRoutes"));
 app.use("/api/players", require("./routes/playerRoutes"));
+app.use("/api/careers", require("./routes/careerRoutes"));
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port", PORT);
 });

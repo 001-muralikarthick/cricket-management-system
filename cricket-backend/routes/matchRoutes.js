@@ -6,7 +6,8 @@ const {
   getMatches,
   getMatchById,
   updateMatch,
-  deleteMatch
+  deleteMatch,
+  generateScorecardPdf
 } = require("../controllers/matchController");
 
 // CREATE MATCH
@@ -17,6 +18,9 @@ router.get("/", getMatches);
 
 // GET ONE MATCH
 router.get("/:id", getMatchById);
+
+// GENERATE PDF
+router.get("/:id/pdf", generateScorecardPdf);
 
 // UPDATE MATCH
 router.put("/:id", updateMatch);

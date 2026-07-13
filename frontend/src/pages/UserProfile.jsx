@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import API from "../api";
 import WagonWheel from "../WagonWheel";
+import PlayerCard from "../components/PlayerCard";
 import "./PlayerAnalyticsDashboard.css";
 import "./PlayerProfile.css";
 
@@ -387,6 +388,37 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
 
   const profileStats = getProfileStats();
 
+  const renderMomentumGraph = (performances, statKey, maxVal, color) => {
+    if (!performances || performances.length === 0) return <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>No data</p>;
+    const maxValue = Math.max(...performances.map(p => Number(p[statKey])), maxVal);
+
+    return (
+      <div className="analytics-chart" style={{ display: 'flex', gap: '8px', height: '150px', alignItems: 'flex-end', padding: '10px 0', borderBottom: '2px solid #e2e8f0' }}>
+        {performances.map((perf, i) => {
+          const heightPct = maxValue > 0 ? (Number(perf[statKey]) / maxValue) * 100 : 0;
+          const vsTeamShort = perf.vsTeam ? perf.vsTeam.substring(0, 3).toUpperCase() : `M${i + 1}`;
+          return (
+            <div key={perf.matchId || i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }} title={`vs ${perf.vsTeam}: ${perf[statKey]}`}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', width: '100%' }}>
+                <div
+                  style={{
+                    width: '100%',
+                    height: `${heightPct}%`,
+                    backgroundColor: color,
+                    borderRadius: '4px 4px 0 0',
+                    transition: 'height 0.3s ease',
+                    minHeight: heightPct > 0 ? '4px' : '0'
+                  }}
+                ></div>
+              </div>
+              <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', fontWeight: '600' }}>{vsTeamShort}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const getTabs = () => {
     const tabs = [
       { id: 'overview', label: 'Overview', icon: '📊' },
@@ -739,7 +771,7 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
         padding: '0 2rem'
       }}>
         <div style={{
-          background: 'white',
+          background: 'var(--bg-card)',
           borderRadius: '16px',
           padding: '1.5rem 2rem',
           boxShadow: '0 10px 40px rgba(0, 58, 108, 0.2)',
@@ -791,8 +823,8 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
 
       {/* Navigation Tabs */}
       <div className="profile-nav" style={{
-        background: 'white',
-        borderBottom: '2px solid #e2e8f0',
+        background: 'var(--bg-card)',
+        borderBottom: '2px solid var(--border)',
         padding: '0 2rem',
         marginTop: '2rem',
         position: 'sticky',
@@ -828,130 +860,149 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
       </div>
 
       {/* Tab Content */}
-      <div className="tab-content animate-fade-in" style={{ padding: '2rem', background: '#f8fafc', minHeight: '400px' }}>
+      <div className="tab-content animate-fade-in" style={{ padding: '2rem', background: 'var(--bg-secondary)', minHeight: '400px' }}>
         {activeTab === 'overview' && (
-          <div style={{ display: 'grid', gap: '2rem' }}>
-            {/* Quick Stats */}
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
-              gap: '1.25rem' 
-            }}>
-              <div className="stat-card" style={{
-                background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
-                border: '2px solid #bae6fd',
-                padding: '1.5rem',
-                borderRadius: '16px',
-                textAlign: 'center',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.1)'
-              }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏏</div>
-                <div style={{ fontSize: '0.8rem', color: '#0369a1', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Matches</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#003a6c' }}>{profileStats.matches}</div>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            {/* Left: FIFA Player Card (only if player is found) */}
+            {analyticsData?.player && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, margin: '0 auto', background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                <PlayerCard player={analyticsData.player} matchPerformances={analyticsData.matchPerformances} />
+                <button 
+                  className="button secondary compact-button" 
+                  style={{ marginTop: '0.75rem', width: '100%', maxWidth: '280px', fontWeight: 'bold' }}
+                  onClick={() => {
+                    alert(`Player Card of ${analyticsData.player.name} is ready for share! Code: CMS-${analyticsData.player._id.slice(-6)}`);
+                  }}
+                >
+                  🔗 Share Player Card
+                </button>
               </div>
-              <div className="stat-card" style={{
-                background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
-                border: '2px solid #fed7aa',
-                padding: '1.5rem',
-                borderRadius: '16px',
-                textAlign: 'center',
-                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.1)'
-              }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚡</div>
-                <div style={{ fontSize: '0.8rem', color: '#c2410c', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Runs</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#9a3412' }}>{profileStats.runs}</div>
-              </div>
-              <div className="stat-card" style={{
-                background: 'linear-gradient(135deg, #f5f3ff, #e9d5ff)',
-                border: '2px solid #d8b4fe',
-                padding: '1.5rem',
-                borderRadius: '16px',
-                textAlign: 'center',
-                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.1)'
-              }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎯</div>
-                <div style={{ fontSize: '0.8rem', color: '#7e22ce', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>High Score</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#6b21a8' }}>{profileStats.highestScore}</div>
-              </div>
-              <div className="stat-card" style={{
-                background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-                border: '2px solid #bbf7d0',
-                padding: '1.5rem',
-                borderRadius: '16px',
-                textAlign: 'center',
-                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.1)'
-              }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏆</div>
-                <div style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Wickets</div>
-                <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#166534' }}>{profileStats.wickets}</div>
-              </div>
-            </div>
+            )}
 
-            {/* Recent Performance */}
-            <div style={{
-              background: 'white',
-              borderRadius: '16px',
-              padding: '2rem',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <h3 style={{ 
-                fontSize: '1.25rem', 
-                fontWeight: '700',
-                color: '#0f172a',
-                marginBottom: '1.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem'
+            {/* Right: Stats & Matches */}
+            <div style={{ flex: 1, minWidth: '320px', display: 'grid', gap: '2rem' }}>
+              {/* Quick Stats */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
+                gap: '1.25rem' 
               }}>
-                <span style={{ display: 'inline-block', width: '4px', height: '22px', background: '#003a6c', borderRadius: '2px' }}></span>
-                Recent Matches
-              </h3>
-              <div style={{ display: 'grid', gap: '1rem' }}>
-                {analyticsData.matchPerformances.slice(0, 5).map((perf, idx) => (
-                  <div key={perf.matchId} style={{
-                    padding: '1.25rem',
-                    background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
-                    borderRadius: '12px',
-                    border: '1px solid #e2e8f0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '1rem'
-                  }}>
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <div style={{ 
-                        fontWeight: '700', 
-                        color: '#0f172a',
-                        fontSize: '1rem',
-                        marginBottom: '0.5rem'
-                      }}>
-                        vs {perf.vsTeam}
+                <div className="stat-card" style={{
+                  background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                  border: '2px solid #bae6fd',
+                  padding: '1.5rem',
+                  borderRadius: '16px',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.1)'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏏</div>
+                  <div style={{ fontSize: '0.8rem', color: '#0369a1', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Matches</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#003a6c' }}>{profileStats.matches}</div>
+                </div>
+                <div className="stat-card" style={{
+                  background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
+                  border: '2px solid #fed7aa',
+                  padding: '1.5rem',
+                  borderRadius: '16px',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 12px rgba(249, 115, 22, 0.1)'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚡</div>
+                  <div style={{ fontSize: '0.8rem', color: '#c2410c', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Runs</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#9a3412' }}>{profileStats.runs}</div>
+                </div>
+                <div className="stat-card" style={{
+                  background: 'linear-gradient(135deg, #f5f3ff, #e9d5ff)',
+                  border: '2px solid #d8b4fe',
+                  padding: '1.5rem',
+                  borderRadius: '16px',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.1)'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎯</div>
+                  <div style={{ fontSize: '0.8rem', color: '#7e22ce', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>High Score</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#6b21a8' }}>{profileStats.highestScore}</div>
+                </div>
+                <div className="stat-card" style={{
+                  background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                  border: '2px solid #bbf7d0',
+                  padding: '1.5rem',
+                  borderRadius: '16px',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 12px rgba(34, 197, 94, 0.1)'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏆</div>
+                  <div style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Wickets</div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#166534' }}>{profileStats.wickets}</div>
+                </div>
+              </div>
+
+              {/* Recent Performance */}
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: '16px',
+                padding: '2rem',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                border: '1px solid var(--border)'
+              }}>
+                <h3 style={{ 
+                  fontSize: '1.25rem', 
+                  fontWeight: '700',
+                  color: '#0f172a',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem'
+                }}>
+                  <span style={{ display: 'inline-block', width: '4px', height: '22px', background: '#003a6c', borderRadius: '2px' }}></span>
+                  Recent Matches
+                </h3>
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  {analyticsData.matchPerformances.slice(0, 5).map((perf, idx) => (
+                    <div key={perf.matchId || idx} style={{
+                      padding: '1.25rem',
+                      background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-muted))',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '1rem'
+                    }}>
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <div style={{ 
+                          fontWeight: '700', 
+                          color: '#0f172a',
+                          fontSize: '1rem',
+                          marginBottom: '0.5rem'
+                        }}>
+                          vs {perf.vsTeam}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                          <span>📅 {perf.date.toLocaleDateString()}</span>
+                          <span>🏆 {perf.tournament}</span>
+                        </div>
                       </div>
-                      <div style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                        <span>📅 {perf.date.toLocaleDateString()}</span>
-                        <span>🏆 {perf.tournament}</span>
+                      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                        {perf.batted && (
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', marginBottom: '0.25rem' }}>BATTING</div>
+                            <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>{perf.runsScored}({perf.ballsFaced})</div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>SR: {perf.strikeRate}</div>
+                          </div>
+                        )}
+                        {perf.bowled && (
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', marginBottom: '0.25rem' }}>BOWLING</div>
+                            <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>{perf.wicketsTaken}/{perf.runsConceded}</div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{perf.oversBowled} ov</div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                      {perf.batted && (
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', marginBottom: '0.25rem' }}>BATTING</div>
-                          <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>{perf.runsScored}({perf.ballsFaced})</div>
-                          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>SR: {perf.strikeRate}</div>
-                        </div>
-                      )}
-                      {perf.bowled && (
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600', marginBottom: '0.25rem' }}>BOWLING</div>
-                          <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>{perf.wicketsTaken}/{perf.runsConceded}</div>
-                          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{perf.oversBowled} ov</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -1207,17 +1258,75 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
                 ))}
               </div>
             </div>
+
+            {/* Visual Analytics */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '2rem',
+              marginTop: '2rem'
+            }}>
+              {/* Wagon Wheel */}
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: '16px',
+                padding: '2rem',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a', marginBottom: '1.5rem', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ display: 'inline-block', width: '4px', height: '22px', background: '#3b82f6', borderRadius: '2px' }}></span>
+                  Career Wagon Wheel
+                </h3>
+                <div style={{ width: '100%', maxWidth: '320px' }}>
+                  <WagonWheel wagonWheelData={analyticsData.aggregatedWagonWheel || {}} />
+                </div>
+              </div>
+
+              {/* Batting Trend */}
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: '16px',
+                padding: '2rem',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                border: '1px solid var(--border)'
+              }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ display: 'inline-block', width: '4px', height: '22px', background: '#38bdf8', borderRadius: '2px' }}></span>
+                  Batting Form (Runs per Match)
+                </h3>
+                {renderMomentumGraph(analyticsData.matchPerformances.filter(p => p.batted), 'runsScored', 10, '#38bdf8')}
+              </div>
+
+              {/* Bowling Trend */}
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: '16px',
+                padding: '2rem',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                border: '1px solid var(--border)'
+              }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ display: 'inline-block', width: '4px', height: '22px', background: '#a855f7', borderRadius: '2px' }}></span>
+                  Bowling Form (Wickets per Match)
+                </h3>
+                {renderMomentumGraph(analyticsData.matchPerformances.filter(p => p.bowled), 'wicketsTaken', 3, '#a855f7')}
+              </div>
+            </div>
           </div>
         )}
 
         {activeTab === 'matches' && (
           <div style={{ display: 'grid', gap: '2rem' }}>
             <div style={{
-              background: 'white',
+              background: 'var(--bg-card)',
               borderRadius: '16px',
               padding: '2rem',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-              border: '1px solid #e2e8f0'
+              border: '1px solid var(--border)'
             }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
@@ -1236,9 +1345,9 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
                   analyticsData.matchPerformances.map((perf) => (
                     <div key={perf.matchId} style={{
                       padding: '1.5rem',
-                      background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                      background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-muted))',
                       borderRadius: '12px',
-                      border: '1px solid #e2e8f0'
+                      border: '1px solid var(--border)'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
                         <div>
@@ -1255,9 +1364,9 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
                         {perf.batted && (
                           <div style={{
                             padding: '1rem',
-                            background: 'white',
+                            background: 'var(--bg-card)',
                             borderRadius: '8px',
-                            border: '1px solid #e2e8f0'
+                            border: '1px solid var(--border)'
                           }}>
                             <div style={{ fontSize: '0.75rem', color: '#0369a1', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Batting</div>
                             <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.25rem' }}>
@@ -1271,9 +1380,9 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
                         {perf.bowled && (
                           <div style={{
                             padding: '1rem',
-                            background: 'white',
+                            background: 'var(--bg-card)',
                             borderRadius: '8px',
-                            border: '1px solid #e2e8f0'
+                            border: '1px solid var(--border)'
                           }}>
                             <div style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: '600', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Bowling</div>
                             <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.25rem' }}>
@@ -1298,11 +1407,11 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
         {activeTab === 'achievements' && (
           <div style={{ display: 'grid', gap: '2rem' }}>
             <div style={{
-              background: 'white',
+              background: 'var(--bg-card)',
               borderRadius: '16px',
               padding: '2rem',
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-              border: '1px solid #e2e8f0'
+              border: '1px solid var(--border)'
             }}>
               <h3 style={{ 
                 fontSize: '1.25rem', 
@@ -1369,9 +1478,9 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
                     padding: '1.5rem',
                     background: achievement.unlocked 
                       ? 'linear-gradient(135deg, #fef3c7, #fde68a)' 
-                      : 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                      : 'linear-gradient(135deg, var(--bg-secondary), var(--bg-muted))',
                     borderRadius: '12px',
-                    border: achievement.unlocked ? '2px solid #fcd34d' : '2px solid #e2e8f0',
+                    border: achievement.unlocked ? '2px solid #fcd34d' : '1px solid var(--border)',
                     textAlign: 'center',
                     opacity: achievement.unlocked ? 1 : 0.6,
                     transition: 'all 0.3s'
@@ -1426,11 +1535,11 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
 
         {activeTab === 'settings' && (
           <div style={{
-            background: 'white',
+            background: 'var(--bg-card)',
             borderRadius: '16px',
             padding: '2rem',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-            border: '1px solid #e2e8f0'
+            border: '1px solid var(--border)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
               <div>
@@ -1465,10 +1574,10 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
             }}>
               {/* Personal Information Card */}
               <div style={{
-                background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                background: 'linear-gradient(135deg, var(--bg-secondary), var(--bg-muted))',
                 borderRadius: '16px',
                 padding: '1.5rem',
-                border: '1px solid #e2e8f0',
+                border: '1px solid var(--border)',
                 gridColumn: 'span 2'
               }}>
                 <h4 style={{ 
@@ -1504,9 +1613,9 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
                         width: '100%',
                         padding: '0.75rem 1rem',
                         fontSize: '0.95rem',
-                        border: isEditing ? '2px solid #003a6c' : '2px solid #e2e8f0',
+                        border: isEditing ? '2px solid #003a6c' : '1px solid var(--border)',
                         borderRadius: '10px',
-                        background: isEditing ? 'white' : '#f8fafc',
+                        background: isEditing ? 'var(--bg-card)' : 'var(--bg-secondary)',
                         opacity: isEditing ? 1 : 0.6,
                         transition: 'all 0.2s'
                       }} 
@@ -1521,11 +1630,11 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
                       defaultValue={userEmail} 
                       readOnly 
                       style={{ 
-                        background: '#f1f5f9', 
+                        background: 'var(--bg-muted)', 
                         width: '100%',
                         padding: '0.75rem 1rem',
                         fontSize: '0.95rem',
-                        border: '2px solid #e2e8f0',
+                        border: '1px solid var(--border)',
                         borderRadius: '10px',
                         cursor: 'not-allowed',
                         opacity: 0.7,
@@ -1571,9 +1680,9 @@ function UserProfile({ userName, userEmail, userRole = "Player", teamsCount, tou
                           flex: 1,
                           padding: '0.625rem',
                           fontSize: '0.875rem',
-                          border: isEditing ? '2px solid #003a6c' : '2px solid #e2e8f0',
+                          border: isEditing ? '2px solid #003a6c' : '1px solid var(--border)',
                           borderRadius: '8px',
-                          background: isEditing ? 'white' : '#f8fafc',
+                          background: isEditing ? 'var(--bg-card)' : 'var(--bg-secondary)',
                           opacity: isEditing ? 1 : 0.6,
                           cursor: isEditing ? 'pointer' : 'not-allowed'
                         }} 

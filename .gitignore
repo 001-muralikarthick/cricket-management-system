@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary tests and unrelated files
+resume_bullet_points.tex
+test_manual_match.cjs
+test_score_tournament.cjs
+cricket-backend/test_add_match.cjs
+cricket-backend/test_analytics.js
+cricket-backend/test_mongoose.js
+cricket-backend/check_player.cjs
+frontend/test*
+frontend/src/test*
+

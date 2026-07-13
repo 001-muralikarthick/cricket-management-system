@@ -86,6 +86,14 @@ function TeamManager({ teams, setTeams, allPlayers, setAllPlayers, onBack }) {
         return;
       }
       try {
+        // Find if they belong to a different team
+        const otherTeam = teams.find(t => t.players && t.players.includes(existingPlayer.name));
+        if (otherTeam && otherTeam._id !== team._id) {
+          // Remove them from the other team first
+          const updatedOtherPlayers = otherTeam.players.filter(p => p !== existingPlayer.name);
+          await API.put(`/teams/${otherTeam._id}`, { players: updatedOtherPlayers });
+        }
+
         const newPlayers = [...(team.players || []), existingPlayer.name];
         await API.put(`/teams/${team._id}`, { players: newPlayers });
         await API.put(`/players/${existingPlayer._id}`, { team: team.name });
@@ -93,7 +101,16 @@ function TeamManager({ teams, setTeams, allPlayers, setAllPlayers, onBack }) {
         fetchAllPlayers();
       } catch (err) {
         console.warn("API not available, adding existing player locally", err);
-        setTeams((prev) => prev.map(t => t._id === team._id ? { ...t, players: [...(t.players || []), existingPlayer.name] } : t));
+        setTeams((prev) => prev.map(t => {
+          if (t._id === team._id) {
+            return { ...t, players: [...(t.players || []), existingPlayer.name] };
+          }
+          // Remove from other teams locally
+          if (t.players && t.players.includes(existingPlayer.name)) {
+            return { ...t, players: t.players.filter(p => p !== existingPlayer.name) };
+          }
+          return t;
+        }));
       }
     } else {
       try {

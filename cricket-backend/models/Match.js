@@ -61,7 +61,8 @@ const matchSchema = new mongoose.Schema(
         wicketType: String,
         legal: Boolean,
         bowler: String,
-        striker: String
+        striker: String,
+        shotRegion: String
       }
     ],
 
@@ -78,7 +79,12 @@ const matchSchema = new mongoose.Schema(
         runs: { type: Number, default: 0 },
         balls: { type: Number, default: 0 },
         fours: { type: Number, default: 0 },
-        sixes: { type: Number, default: 0 }
+        sixes: { type: Number, default: 0 },
+        wagonWheel: {
+          type: Map,
+          of: Number,
+          default: {}
+        }
       },
       default: {}
     },
@@ -98,6 +104,10 @@ const matchSchema = new mongoose.Schema(
     status: {
       type: String,
       default: "LIVE"
+    },
+    tournament: {
+      type: String,
+      default: null
     }
   },
   { timestamps: true }
